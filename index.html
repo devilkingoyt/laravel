@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laravel Framework & PHP Assessment</title>
+<style>
+    * { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; box-sizing: border-box; }
+  :root {
+    --primary: #ff2d20; /* Laravel Red */
+    --primary-hover: #e02619;
+    --bg-color: #0f172a;
+    --card-bg: #1e293b;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --border-color: #334155;
+    --success: #10b981;
+    --error: #f43f5e;
+    --accent: #f87171;
+  }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg-color);
+    color: var(--text-main);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 20px;
+    box-sizing: border-box;
+  }
+
+  .quiz-container {
+    width: 100%;
+    max-width: 750px;
+    background: var(--card-bg);
+    padding: 2.5rem;
+    border-radius: 20px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--border-color);
+    box-sizing: border-box;
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    font-weight: 600;
+    color: var(--primary);
+  }
+
+  .timer-box {
+    background: rgba(255, 45, 32, 0.1);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-variant-numeric: tabular-nums;
+    border: 1px solid rgba(255, 45, 32, 0.2);
+  }
+
+  .progress-bar-wrap {
+    width: 100%;
+    height: 8px;
+    background: #090d16;
+    border-radius: 10px;
+    margin-bottom: 2.5rem;
+    overflow: hidden;
+  }
+
+  #progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--primary), var(--accent));
+    border-radius: 10px;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .flashcard { display: none; animation: fadeIn 0.4s ease; }
+  .flashcard.active { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .question-text {
+    font-size: 1.25rem;
+    margin-bottom: 2rem;
+    line-height: 1.6;
+    font-weight: 500;
+  }
+
+  .options-list { display: grid; gap: 14px; }
+
+  .option-label {
+    padding: 16px;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    position: relative;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.95rem;
+  }
+
+  .option-label:hover { 
+    background: rgba(255,255,255,0.02); 
+    border-color: var(--text-muted);
+  }
+  
+  .option-label.selected { 
+    border-color: var(--primary); 
+    background: rgba(255, 45, 32, 0.08); 
+  }
+
+  input[type="radio"] { 
+    margin-right: 15px; 
+    transform: scale(1.2); 
+    accent-color: var(--primary);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .nav-btns { 
+    display: grid; 
+    grid-template-columns: 1fr 1fr; 
+    gap: 15px; 
+    margin-top: 2.5rem; 
+  }
+
+  button {
+    padding: 14px;
+    border-radius: 12px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+  }
+
+  button:active { transform: scale(0.98); }
+
+  .btn-sec { background: var(--border-color); color: var(--text-main); }
+  .btn-sec:hover { background: #475569; }
+  .btn-pri { background: var(--primary); color: #ffffff; }
+  .btn-pri:hover { background: var(--primary-hover); }
+  
+  .btn-submit { 
+    background: linear-gradient(135deg, var(--success), #059669); 
+    color: white; 
+    margin-top: 1.5rem; 
+    width: 100%; 
+    display: none; 
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+  }
+
+  /* Results Section */
+  #results-screen { display: none; }
+  
+  .results-header-box {
+    text-align: center;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .review-container {
+    max-height: 50vh;
+    overflow-y: auto;
+    margin-top: 1.5rem;
+    padding-right: 8px;
+  }
+  
+  .review-container::-webkit-scrollbar { width: 6px; }
+  .review-container::-webkit-scrollbar-track { background: transparent; }
+  .review-container::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+
+  .review-card {
+    background: #0f172a;
+    padding: 18px;
+    border-radius: 12px;
+    margin-top: 15px;
+    border-left: 5px solid var(--error);
+  }
+  .review-card.correct-card { border-left-color: var(--success); }
+  .review-card p { margin: 6px 0; font-size: 0.95rem; font-family: 'Courier New', Courier, monospace; }
+  
+  .wrong-txt { color: var(--error); font-weight: 600; }
+  .correct-txt { color: var(--success); font-weight: 600; }
+  .skipped-txt { color: #eab308; font-weight: 600; }
+
+</style>
+</head>
+<body>
+
+<div class="quiz-container" id="quiz-box">
+  <div class="header">
+    <span>Question <span id="q-num">1</span> / 25</span>
+    <span id="timer" class="timer-box">20:00</span>
+  </div>
+  <div class="progress-bar-wrap"><div id="progress-fill"></div></div>
+
+  <div id="card-anchor"></div>
+
+  <div class="nav-btns">
+    <button class="btn-sec" onclick="changeQ(-1)" id="prev-btn">Previous</button>
+    <button class="btn-pri" onclick="changeQ(1)" id="next-btn">Next / Skip</button>
+  </div>
+  <button id="final-btn" class="btn-submit" onclick="processResults()">Finish &amp; Reveal Mistakes</button>
+</div>
+
+<div class="quiz-container" id="results-screen">
+  <div class="results-header-box">
+    <h2>Performance Summary</h2>
+    <div id="final-score" style="font-size: 3rem; font-weight: 700; color: var(--primary); margin: 0.5rem 0;"></div>
+    <div id="completion-time" style="color: var(--text-muted); font-size: 0.9rem;"></div>
+  </div>
+  
+  <div class="review-container">
+    <h3 style="color: var(--text-muted); font-size: 1.1rem;">Review Session</h3>
+    <div id="mistake-list"></div>
+  </div>
+  
+  <button class="btn-pri" style="width: 100%; margin-top: 2rem; background: linear-gradient(135deg, var(--primary), var(--accent)); color: #ffffff;" onclick="location.reload()">Try 25 New Questions</button>
+</div>
+
+<script>
+// Master Question Pool extracted from Laravel and PHP Question Bank PDF
+const masterPool = [
+  { q: "Which of the following is the correct command to install Homestead?", o: ["vagrant box add laravel/homestead", "vagrant box add homestead/laravel", "vagrant box install laravel/homestead", "vagrant box install homestead/laravel"], a: 0 },
+  { q: "Which of the following terms BEST describes Laravel?", o: ["Application", "Framework", "Software", "Tool"], a: 1 },
+  { q: "The acronym for Hypertext Preprocessor is _______.", o: ["HP", "PHP", "HTTP", "HTML"], a: 1 },
+  { q: "A _______ is a basic templating structure that is used to develop, test, and deploy applications rapidly and efficiently.", o: ["Template Engine", "Web Engine", "Framework", "Script"], a: 2 },
+  { q: "______ is a development model that includes rapid prototyping.", o: ["Rapid Action Program", "Laravel Framework", "Templating", "Rapid Application Development"], a: 3 },
+  { q: "The ______ directory includes the code that collates all files spread throughout the directories and runs the application.", o: ["bootstrap", "app", "config", "routes"], a: 0 },
+  { q: "The ______ tool is an automation tool that helps to create models, views, and controllers pre-filled with a template.", o: ["command", "artisan", "PHP Dependency", "framework"], a: 1 },
+  { q: "The ______ file in Windows is the first file that is referenced when the operating system tries to resolve a domain name.", o: ["hosts", "local", "public", ".yaml"], a: 0 },
+  { q: "__________ helps in implementing CRUD operations.", o: ["Routes", "Eloquent ORM", "Operators", "DB query builder class"], a: 1 },
+  { q: "_______ refers to the concept of sending records in blocks.", o: ["Validation", "Pagination", "Routing", "Authentication"], a: 1 },
+  { q: "The basic contents of a Web application are written in the _________.", o: ["template engine", "local file", "master template", "public folder"], a: 2 },
+  { q: "A ________ is a case where the attributes of a model are blindly updated.", o: ["Attribute", "Mass Assignment", "Static Controller", "Mighty Model"], a: 1 },
+  { q: "The _________ array enables a user to update any value in the same database.", o: ["$data", "$update", "$revoke", "$edit"], a: 0 },
+  { q: "Which of the following statements is TRUE regarding Homestead and Routing?", o: ["Both 1 and 2", "Only 2", "None of these", "Only 1"], a: 2 },
+  { q: "The GNU License information appears when you install _______.", o: ["Composer", "Vagrant", "Homestead", "GitBash"], a: 3 },
+  { q: "Which enables the user to add elements to the project that follow Laravel convention?", o: ["Artisan Tool", "PHP Code", "Laravel Components", "Composer"], a: 0 },
+  { q: "Functions defined in the model that replace a long chain with a simple one are called _______.", o: ["Model Events", "Event Listeners", "Eloquent ORM", "Query Scopes"], a: 3 },
+  { q: "The _________ method uses URI, two arguments, and the closure function executed in response.", o: ["put", "push", "get", "set"], a: 2 },
+  { q: "The _______ in Laravel helps in creating tables.", o: ["schema builder class", "rows", "foreign keys", "columns"], a: 0 },
+  { q: "In Laravel convention, ________ are the preferred way to create records, not tables.", o: ["keys", "functions", "routes", "strings"], a: 2 },
+  { q: "________ acts as a version control system for a database that includes many tables.", o: ["Database", "Storage", "Cache", "Migration"], a: 3 },
+  { q: "The ________ method is used to create a table.", o: ["down", "up", "create", "set"], a: 1 },
+  { q: "_____ enables all application requests to direct towards its respective controller.", o: ["SSH", "Unit Testing", "Routing", "Migration System"], a: 2 },
+  { q: "Laravel recommends the use of ________ when writing codes.", o: ["models", "views", "scripts", "keys"], a: 0 },
+  { q: "The MVC feature eliminating the need to create new files for single applications is _____.", o: ["synchronizing", "formatting", "collating", "editing"], a: 2 },
+  { q: "'Codes can be independent or interchanged based on requirement' describes:", o: ["static", "modularity", "irrevocable", "configuring"], a: 1 },
+  { q: "What refers to the classification of data based on its attributes?", o: ["Data Codes", "Data Server", "Data Bucket", "Data Types"], a: 3 },
+  { q: "Which data type comprises a whole number?", o: ["Float", "Integer", "Boolean", "String"], a: 1 },
+  { q: "Storing data such as numeric and character values at runtime is done using:", o: ["Variables", "Texts", "Arrows", "Modes"], a: 0 },
+  { q: "Variables declared within a function are termed as ________ variables for that function.", o: ["Set", "Joint", "Local", "Easy"], a: 2 },
+  { q: "What in PHP helps the user to arrive at a decision based on certain conditions?", o: ["Constructions", "Conditional Statements", "Conditional Data", "Contracts"], a: 1 },
+  { q: "Multiple parameters in a function are separated by a ________.", o: ["Hashtag (#)", "Comma (,)", "Question Mark (?)", "Plus (+)"], a: 1 },
+  { q: "What are named and indexed collections of other values?", o: ["Boolean", "Null", "Strings", "Arrays"], a: 3 },
+  { q: "In which year was PHP version 8.0 released?", o: ["2015", "2018", "2020", "2022"], a: 2 },
+  { q: "The code 'vagrant@homestead:~$ composer -V' verifies:", o: ["Homestead version", "SQLite version", "Laravel version", "Composer version"], a: 3 }
+];
+
+// Randomize and extract exactly 25 questions for the flashcard queue
+const sessionSize = 25;
+function getSessionQuestions() {
+  return [...masterPool].sort(() => Math.random() - 0.5).slice(0, sessionSize);
+}
+
+const sessionQuestions = getSessionQuestions();
+let currentIdx = 0;
+let answers = new Array(sessionSize).fill(null);
+let totalTimeAllocated = 1200; // 20 Minutes
+let time = totalTimeAllocated;
+let timerInterval = null;
+
+function init() {
+  const anchor = document.getElementById('card-anchor');
+  sessionQuestions.forEach((q, i) => {
+    const card = document.createElement('div');
+    card.className = `flashcard ${i === 0 ? 'active' : ''}`;
+    card.id = `card-${i}`;
+    
+    const opts = q.o.map((opt, j) => `
+      <label class="option-label" id="L-${i}-${j}">
+        <input type="radio" name="q${i}" value="${j}" onclick="handleSel(${i}, ${j})">
+        ${escapeHtml(opt)}
+      </label>
+    `).join('');
+
+    card.innerHTML = `<div class="question-text">${i+1}. ${escapeHtml(q.q)}</div><div class="options-list">${opts}</div>`;
+    anchor.appendChild(card);
+  });
+  updateUI();
+  startTimer();
+  setupKeyboardNavigation();
+}
+
+function handleSel(qI, oI) {
+  answers[qI] = oI;
+  document.querySelectorAll(`#card-${qI} .option-label`).forEach(l => l.classList.remove('selected'));
+  document.getElementById(`L-${qI}-${oI}`).classList.add('selected');
+  
+  // Set the native radio button as checked explicitly to prevent state loss when navigating backward
+  document.querySelector(`#card-${qI} input[value="${oI}"]`).checked = true;
+
+  setTimeout(() => {
+    if(currentIdx < sessionSize - 1) changeQ(1);
+  }, 250);
+}
+
+function changeQ(step) {
+  const next = currentIdx + step;
+  if (next >= 0 && next < sessionSize) {
+    document.getElementById(`card-${currentIdx}`).classList.remove('active');
+    currentIdx = next;
+    document.getElementById(`card-${currentIdx}`).classList.add('active');
+    updateUI();
+  }
+}
+
+function updateUI() {
+  document.getElementById('q-num').innerText = currentIdx + 1;
+  document.getElementById('progress-fill').style.width = `${((currentIdx + 1) / sessionSize) * 100}%`;
+  
+  document.getElementById('prev-btn').style.visibility = (currentIdx === 0) ? 'hidden' : 'visible';
+  document.getElementById('next-btn').innerText = (currentIdx === sessionSize - 1) ? 'Review End' : 'Next / Skip';
+  if (answers.includes(null) === false || currentIdx === sessionSize - 1) {
+     document.getElementById('final-btn').style.display = 'block';
+  }
+}
+
+function startTimer() {
+  const tEl = document.getElementById('timer');
+  timerInterval = setInterval(() => {
+    let m = Math.floor(time / 60);
+    let s = time % 60;
+    tEl.innerText = `${m}:${s < 10 ? '0'+s : s}`;
+    if (time <= 0) { 
+      clearInterval(timerInterval); 
+      processResults(); 
+    }
+    time--;
+  }, 1000);
+}
+
+function processResults() {
+  clearInterval(timerInterval);
+  document.getElementById('quiz-box').style.display = 'none';
+  document.getElementById('results-screen').style.display = 'block';
+  
+  let score = 0;
+  const list = document.getElementById('mistake-list');
+  list.innerHTML = "";
+
+  const elapsedTotal = totalTimeAllocated - time;
+  const elapsedMin = Math.floor(elapsedTotal / 60);
+  const elapsedSec = elapsedTotal % 60;
+  document.getElementById('completion-time').innerText = `Completed in ${elapsedMin}m ${elapsedSec}s`;
+
+  sessionQuestions.forEach((q, i) => {
+    const isCorrect = answers[i] === q.a;
+    const skipped = answers[i] === null;
+    if (isCorrect) score++;
+
+    const div = document.createElement('div');
+    div.className = `review-card ${isCorrect ? 'correct-card' : ''}`;
+    
+    let pickText = skipped ? '<span class="skipped-txt">SKIPPED</span>' : (isCorrect ? `<span class="correct-txt">${escapeHtml(q.o[answers[i]])}</span>` : `<span class="wrong-txt">${escapeHtml(q.o[answers[i]])}</span>`);
+    
+    div.innerHTML = `
+      <p><strong>Q${i+1}: ${escapeHtml(q.q)}</strong></p>
+      <p>Your Selection: ${pickText}</p>
+      ${!isCorrect ? `<p>Correct Answer: <span class="correct-txt">${escapeHtml(q.o[q.a])}</span></p>` : ''}
+    `;
+    list.appendChild(div);
+  });
+
+  document.getElementById('final-score').innerText = `${score} / ${sessionSize}`;
+}
+
+function setupKeyboardNavigation() {
+  document.addEventListener('keydown', (e) => {
+    if (document.getElementById('quiz-box').style.display === 'none') return;
+    if (e.key === 'ArrowRight') changeQ(1);
+    if (e.key === 'ArrowLeft') changeQ(-1);
+    if (['1','2','3','4'].includes(e.key)) {
+      const optIdx = parseInt(e.key) - 1;
+      const options = document.querySelectorAll(`#card-${currentIdx} input[type="radio"]`);
+      if (options[optIdx]) {
+        options[optIdx].click();
+      }
+    }
+  });
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.innerText = text;
+  return div.innerHTML;
+}
+
+init();
+</script>
+</body>
+</html>
